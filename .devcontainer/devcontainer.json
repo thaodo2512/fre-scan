@@ -1,0 +1,23 @@
+{
+  "name": "Freqtrade Dev Container",
+  "image": "freqtradeorg/freqtrade:develop",
+  "runArgs": [
+    "--init",
+    "--env", "PIP_DISABLE_PIP_VERSION_CHECK=1"
+  ],
+  "forwardPorts": [8080],
+  "postCreateCommand": "pip install --upgrade pip && pip install -r /freqtrade/user_data/requirements-dev.txt",
+  "mounts": [
+    "source=${localWorkspaceFolder}/user_data,target=/freqtrade/user_data,type=bind"
+  ],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-toolsai.jupyter",
+        "ms-python.vscode-pylance",
+        "ms-azuretools.vscode-docker"
+      ]
+    }
+  }
+}

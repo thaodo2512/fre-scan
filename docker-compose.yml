@@ -1,0 +1,23 @@
+services:
+  freqtrade:
+    # Development build using the latest freqtrade develop image
+    image: freqtradeorg/freqtrade:develop
+    restart: always
+    container_name: freqtrade-dev
+    ports:
+      # Expose REST API for local access
+      - "8080:8080"
+    volumes:
+      # Persist user data (strategies, configs, data)
+      - ./user_data:/freqtrade/user_data
+      # Persist logs separately for easier access
+      - ./user_data/logs:/freqtrade/user_data/logs
+      # Persist database files outside the container
+      - ./user_data/db:/freqtrade/user_data/db
+    command:
+      - trade
+      - --config
+      - /freqtrade/user_data/config.json
+      - --strategy
+      - SampleStrategy
+      - --dry-run
