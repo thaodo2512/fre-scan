@@ -29,12 +29,19 @@ services:
       - --strategy
       - SampleStrategy
       - --dry-run
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import requests,sys; sys.exit(0) if requests.get('http://localhost:8080/api/v1/ping', timeout=2).ok else sys.exit(1)\""]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
 
   reporter:
     image: freqtradeorg/freqtrade:develop
     container_name: freqtrade-reporter
     depends_on:
-      - freqtrade
+      freqtrade:
+        condition: service_healthy
     restart: unless-stopped
     entrypoint: ["python", "/freqtrade/report.py"]
     environment:
