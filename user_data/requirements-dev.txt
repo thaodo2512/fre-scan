@@ -1,0 +1,3 @@
+# Optional dev-only dependencies for the VSCode devcontainer.
+# Leave empty to skip installing anything extra.
+

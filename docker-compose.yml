@@ -7,6 +7,14 @@ services:
     ports:
       # Expose REST API for local access
       - "8080:8080"
+    environment:
+      # Telegram via env (optional) - prefer .env file or export in shell
+      - FREQTRADE__TELEGRAM__ENABLED=${TELEGRAM_ENABLED:-false}
+      - FREQTRADE__TELEGRAM__TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - FREQTRADE__TELEGRAM__CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      # REST basic auth via env (optional)
+      - FREQTRADE__API_SERVER__USERNAME=${FREQTRADE_API_USERNAME:-YOUR_USERNAME}
+      - FREQTRADE__API_SERVER__PASSWORD=${FREQTRADE_API_PASSWORD:-YOUR_PASSWORD}
     volumes:
       # Persist user data (strategies, configs, data)
       - ./user_data:/freqtrade/user_data
@@ -21,3 +29,28 @@ services:
       - --strategy
       - SampleStrategy
       - --dry-run
+
+  reporter:
+    image: freqtradeorg/freqtrade:develop
+    container_name: freqtrade-reporter
+    depends_on:
+      - freqtrade
+    restart: unless-stopped
+    entrypoint: ["python", "/freqtrade/report.py"]
+    environment:
+      # Freqtrade REST target (use service DNS inside the compose network)
+      - FREQTRADE_API_URL=http://freqtrade:8080/api/v1
+      - FREQTRADE_API_USERNAME=${FREQTRADE_API_USERNAME:-YOUR_USERNAME}
+      - FREQTRADE_API_PASSWORD=${FREQTRADE_API_PASSWORD:-YOUR_PASSWORD}
+      # Telegram credentials (provided via .env or shell)
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID:-}
+      # Reporter behavior
+      - REPORT_INTERVAL_SECONDS=${REPORT_INTERVAL_SECONDS:-1800}
+      - TELEGRAM_SILENT=${TELEGRAM_SILENT:-true}
+      - REPORT_INCLUDE_PAIRLIST=${REPORT_INCLUDE_PAIRLIST:-true}
+      - REPORT_PAIRLIST_STYLE=${REPORT_PAIRLIST_STYLE:-columns}
+      - REPORT_PAIRLIST_LIMIT=${REPORT_PAIRLIST_LIMIT:-30}
+    volumes:
+      - ./user_data:/freqtrade/user_data
+      - ./report.py:/freqtrade/report.py:ro

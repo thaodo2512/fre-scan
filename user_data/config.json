@@ -1,0 +1,112 @@
+{
+  "_comment": "Sample Freqtrade configuration for Docker-based development with dynamic pairlists.",
+  "_comment_general": "General bot identity and trading mode settings.",
+  "bot_name": "freqtrade-docker-sample",
+  "strategy": "SampleStrategy",
+  "trading_mode": "futures",
+  "margin_mode": "isolated",
+  "position_mode": "single",
+  "leverage": 2,
+  "timeframe": "5m",
+  "stake_currency": "USDT",
+  "stake_amount": "unlimited",
+  "max_open_trades": 5,
+  "initial_state": "running",
+  "dry_run": true,
+  "dry_run_wallet": 1000,
+
+  "_comment_exchange": "Exchange configuration with placeholder API credentials.",
+  "exchange": {
+    "name": "binance",
+    "key": "YOUR_API_KEY",
+    "secret": "YOUR_API_SECRET",
+    "password": "YOUR_API_PASSWORD",
+    "ccxt_config": {
+      "enableRateLimit": true,
+      "options": {
+        "defaultType": "future",
+        "defaultSubType": "linear"
+      }
+    },
+    "ccxt_async_config": {
+      "enableRateLimit": true
+    },
+    "pair_whitelist": [],
+    "pair_blacklist": []
+  },
+
+  "_comment_pairlists": "Dynamic pairlist combining volume, age, volatility, performance, spread, range stability, and shuffle filters.",
+  "pairlists": [
+    {
+      "method": "VolumePairList",
+      "number_assets": 50,
+      "sort_key": "quoteVolume",
+      "min_value": 1000000,
+      "refresh_period": 1800
+    },
+    {
+      "method": "AgeFilter",
+      "min_days_listed": 10
+    },
+    {
+      "method": "VolatilityFilter",
+      "lookback_days": 10,
+      "min_volatility": 0.05,
+      "max_volatility": 0.5,
+      "refresh_period": 1800
+    },
+    {
+      "method": "PerformanceFilter",
+      "lookback_days": 10,
+      "min_profit": 0.01,
+      "refresh_period": 1800
+    },
+    {
+      "method": "SpreadFilter",
+      "max_spread": 0.005,
+      "refresh_period": 1800
+    },
+    {
+      "method": "RangeStabilityFilter",
+      "lookback_days": 7,
+      "min_rate_of_change": 0.05,
+      "refresh_period": 1800
+    },
+    {
+      "method": "ShuffleFilter"
+    }
+  ],
+
+  "_comment_telegram": "Telegram notifications are disabled by default to avoid committing secrets. Override via env: FREQTRADE__TELEGRAM__ENABLED=true, FREQTRADE__TELEGRAM__TOKEN, FREQTRADE__TELEGRAM__CHAT_ID.",
+  "telegram": {
+    "enabled": false
+  },
+
+  "_comment_api_server": "REST API exposed via Docker on port 8080 secured with basic authentication.",
+  "api_server": {
+    "enabled": true,
+    "listen_ip_address": "0.0.0.0",
+    "listen_port": 8080,
+    "username": "tinhn",
+    "password": "12345",
+    "verbosity": "info"
+  },
+
+  "_comment_pricing": "Configure how entry/exit prices are simulated and validated.",
+  "entry_pricing": {
+    "price_side": "ask",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "check_last_price": true
+  },
+  "exit_pricing": {
+    "price_side": "bid",
+    "use_order_book": true,
+    "order_book_top": 1,
+    "check_last_price": true
+  },
+
+  "_comment_datadir": "Data directory mapping aligned with Docker volume mounts.",
+  "dataformat_ohlcv": "json",
+  "datadir": "user_data/data"
+}
