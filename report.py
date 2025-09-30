@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import requests
 from requests.adapters import HTTPAdapter
 from requests.auth import HTTPBasicAuth
+from requests import RequestException
 from urllib3.util.retry import Retry
 
 # API configuration (override via environment variables for container use).
@@ -36,6 +37,10 @@ TELEGRAM_SILENT = (
     or os.getenv("TELEGRAM_DISABLE_NOTIFICATION")
     or "false"
 ).strip().lower() in {"1", "true", "yes", "on"}
+
+# Retry/backoff for startup / transient failures
+RETRY_DELAY_SECONDS = int(os.getenv("REPORT_RETRY_DELAY_SECONDS", "10"))
+ONCE_MAX_ATTEMPTS = int(os.getenv("REPORT_ONCE_MAX_ATTEMPTS", "6"))
 
 
 def _build_retry() -> Retry:
@@ -256,17 +261,29 @@ def main() -> int:
     session = init_session()
 
     try:
+        attempts = 0
         while True:
-            run_report(session)
-            if args.once:
-                break
-            time.sleep(REPORT_INTERVAL)
-    except requests.HTTPError as exc:
-        print(f"[ERROR] HTTP error: {exc}", file=sys.stderr)
-        return 1
-    except Exception as exc:  # pylint: disable=broad-except
-        print(f"[ERROR] Unexpected error: {exc}", file=sys.stderr)
-        return 1
+            try:
+                run_report(session)
+                if args.once:
+                    break
+                time.sleep(REPORT_INTERVAL)
+            except RequestException as exc:
+                attempts += 1
+                print(f"[WARN] Request error: {exc}", file=sys.stderr)
+                if args.once and attempts >= ONCE_MAX_ATTEMPTS:
+                    print("[ERROR] Exceeded max attempts for --once run.", file=sys.stderr)
+                    return 1
+                time.sleep(RETRY_DELAY_SECONDS)
+                continue
+            except Exception as exc:  # pylint: disable=broad-except
+                attempts += 1
+                print(f"[WARN] Unexpected error: {exc}", file=sys.stderr)
+                if args.once and attempts >= ONCE_MAX_ATTEMPTS:
+                    print("[ERROR] Exceeded max attempts for --once run.", file=sys.stderr)
+                    return 1
+                time.sleep(RETRY_DELAY_SECONDS)
+                continue
     finally:
         session.close()
 
